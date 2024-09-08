@@ -17,7 +17,11 @@ from quark.agent.agentTools import agentTools
 from quark.agent.prompts import PREPROMPT
 from quark.config import OPENAI_API_KEY
 
+from werkzeug.utils import secure_filename
+
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 
@@ -102,6 +106,19 @@ def get_response():
 
     return result
 
+@app.route('/upload', methods=['GET', 'POST'])
+def upload_file():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return redirect(url_for("index"))
+        file = request.files['file']
+        if file.filename == '':
+            return redirect(url_for("index"))
+        if file:
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            return redirect(url_for("index"))
+    return redirect(url_for("index"))
 
 if __name__ == "__main__":
     app.run()
