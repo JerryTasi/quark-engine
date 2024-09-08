@@ -97,3 +97,48 @@ message.addEventListener("keydown", function (event) {
     send.click();
   }
 });
+
+let dropArea = document.getElementById('drop-area');
+
+function displayFileName() {
+    var fileInput = document.getElementById('fileElem');
+    var fileNameDisplay = document.getElementById('fileNameDisplay');
+    
+    if (fileInput.files.length > 0) {
+        fileNameDisplay.textContent = fileInput.files[0].name;
+    } else {
+        fileNameDisplay.textContent = "Drag and drop the file here, or click the button below to select a file.";
+    }
+}
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropArea.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'), false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'), false);
+});
+
+dropArea.addEventListener('drop', handleDrop, false);
+
+function handleDrop(e) {
+    let dt = e.dataTransfer;
+    let files = dt.files;
+    
+    handleFiles(files);
+}
+
+function handleFiles(files) {
+    let fileInput = document.getElementById('fileElem');
+    fileInput.files = files;
+    document.getElementById('file-upload-form').submit();
+}
