@@ -31,6 +31,16 @@
     <button id="send"></button>
   </div>
 
+  <div class="fileUploadArea">
+      <div id="drop-area">
+          <span id="fileNameDisplay">Drag and drop the file here, or click the button below to select a file.</span>
+          <form id="file-upload-form" action="/upload" method="post" enctype="multipart/form-data">
+              <input type="file" id="fileElem" name="file" accept="*/*" required style="display:none;" onchange="displayFileName()">
+              <label for="fileElem" class="btn">Select file</label>
+              <button type="submit" class="btn">Upload</button>
+          </form>
+      </div>
+  </div>
 </body>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
