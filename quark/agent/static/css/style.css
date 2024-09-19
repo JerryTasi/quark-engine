@@ -198,13 +198,17 @@ h1 {
   color: #6a737d;
 }
 
+#mkdnBox {
+  width: 49%;
+}
+
 #textBox {
-  width: 100%;
+  width: 49%;
 }
 
 #codeBox {
   display: none;
-  width: 49%;
+  width: 0%;
 }
 
 .subtitle {
@@ -225,4 +229,21 @@ h1 {
 
 .available-cell rect {
   stroke-dasharray: 5, 2;
+}
+
+#mkdnBox table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#mkdnBox th, #mkdnBox td {
+  border: 1px solid #fff;
+  padding: 8px;
+  text-align: left;
+}
+
+#mkdnBox h1 {
+  text-align: left;
+  display: flex;
+  flex-wrap: wrap;
 }
