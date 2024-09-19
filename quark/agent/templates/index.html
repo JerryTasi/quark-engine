@@ -23,6 +23,7 @@
   <img class="logo" src="{{url_for('static', filename='images/quark-logo.png')}}" />
   <h1 class="subtitle">Quark Agent: Your AI-powered Android APK Analyst</h1>
   <div class="container">
+    <div class="chatbox" id="mkdnBox"></div>
     <div class="chatbox" id="textBox"></div>
     <div class="chatbox" id="codeBox"></div>
   </div>
@@ -30,7 +31,7 @@
     <textarea type="text" id="message" placeholder="Type your message here..."></textarea>
     <button id="send"></button>
   </div>
-
+  <button onclick="callMkdnBox()">mkdnBox</button>
 </body>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
