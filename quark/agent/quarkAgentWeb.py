@@ -3,7 +3,7 @@ import os
 import re
 import json
 
-from flask import Flask, render_template, request
+from flask import Flask, Response, render_template, request, send_from_directory
 
 from langchain_openai import ChatOpenAI
 from langchain.agents import AgentExecutor
@@ -102,6 +102,15 @@ def get_response():
 
     return result
 
-
+@app.route('/markdownFiles/<path:filename>')
+def sendFile(filename):
+    return send_from_directory('markdownFiles', filename)
+"""
+@app.route('/proxy-image/<path:url>')
+def proxy_image(url):
+    print(url)
+    response = requests.get(url)
+    return Response(response.content, content_type=response.headers['Content-Type'])
+"""
 if __name__ == "__main__":
     app.run()
