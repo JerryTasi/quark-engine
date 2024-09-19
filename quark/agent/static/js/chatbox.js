@@ -65,13 +65,29 @@ send.addEventListener("click", function () {
 
       if (botMessage.code_blocks.length > 0) {
         codeBox.style.display = "block";
-        textBox.style.width = "49%";
+        if(mkdnBox.style.width !=="0%"){
+          mkdnBox.style.width = "32%";
+          textBox.style.width = "32%";
+          codeBox.style.width = "32%";
+        }else{
+          mkdnBox.style.width = "0%";
+          textBox.style.width = "49%";
+          codeBox.style.width = "49%";
+        }
         var codeLines = botMessage.code_blocks.join("\n").split("\n").slice(1).join("\n");
         codeMirror.setValue(codeLines);
         codeMirror.setOption("mode", detectLanguage(botMessage.code_blocks.join("\n\n\n")));
       } else {
         codeBox.style.display = "none";
-        textBox.style.width = "100%";
+        if(mkdnBox.style.width !=="0%"){
+          mkdnBox.style.width = "49%";
+          textBox.style.width = "49%";
+          codeBox.style.width = "0%";
+        }else{
+          mkdnBox.style.width = "0%";
+          textBox.style.width = "100%";
+          codeBox.style.width = "0%";
+        }
       }
 
       textBox.scrollTop = textBox.scrollHeight;
@@ -97,3 +113,55 @@ message.addEventListener("keydown", function (event) {
     send.click();
   }
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+    const mdFilePath = '/markdownFiles/mdFile.md';
+    
+    fetch(mdFilePath)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('mdFile fetch error');
+            }
+            return response.text();
+        })
+        .then(mdText => {
+            const htmlFromMd = marked.parse(mdText);
+            
+            document.getElementById('mkdnBox').innerHTML = htmlFromMd;
+        })
+        .catch(error => {
+            console.error('ERROR: ', error);
+        });
+});
+
+function callMkdnBox() {
+  let info = mkdnBox.style.width + textBox.style.width + codeBox.style.width + " to ";
+
+  if (mkdnBox.style.width === "0%") {
+    if (codeBox.style.width === "49%") {
+      mkdnBox.style.display = "block";
+      mkdnBox.style.width = "32%";
+      textBox.style.width = "32%";
+      codeBox.style.width = "32%";
+    } else {
+      mkdnBox.style.display = "block";
+      mkdnBox.style.width = "49%";
+      textBox.style.width = "49%";
+      codeBox.style.width = "0%";
+    }
+  } else {
+    if (codeBox.style.width === "32%") {
+      mkdnBox.style.display = "none";
+      mkdnBox.style.width = "0%";
+      textBox.style.width = "49%";
+      codeBox.style.width = "49%";
+    } else {
+      mkdnBox.style.display = "none";
+      mkdnBox.style.width = "0%";
+      textBox.style.width = "100%";
+      codeBox.style.width = "0%";
+    }
+  }
+  info = info + mkdnBox.style.width + textBox.style.width + codeBox.style.width;
+  console.log(info);
+}
