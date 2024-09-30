@@ -18,6 +18,8 @@ from langchain_core.messages import AIMessage, HumanMessage
 from quark.config import OPENAI_API_KEY
 from quark.script.ciphey import checkClearText
 
+from werkzeug.utils import secure_filename
+
 import uuid
 
 # Import the optional dependency, langchain
@@ -67,6 +69,7 @@ app = Flask(__name__)
 print(OPENAI_API_KEY)
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 app.config['DEBUG'] = True
+app.config['UPLOAD_FOLDER'] = 'uploads'
 conversation_history = []
 
 
@@ -638,6 +641,19 @@ def add_analyze_step():
 @app.route("/getToolList")
 def getToolList():
     return send_from_directory('toolJson', "toolList.json")
+
+@app.route('/fileUpload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return {"status": "fail", "message": "No file part"}, 400
+    file = request.files['file']
+    if file.filename == '':
+        return {"status": "fail", "message": "No selected file"}, 400
+    if file:
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return {"status": "success", "message": "File uploaded successfully"}, 200
+    return {"status": "fail", "message": "File upload failed"}, 500
 
 # sssssssssssssssss
 if __name__ == "__main__":
