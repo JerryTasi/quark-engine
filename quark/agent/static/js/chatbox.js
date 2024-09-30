@@ -113,3 +113,68 @@ function showCodeBlock() {
     codeblockButton.style.color = "#000";
   }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  const fileSelect = document.getElementById('fileSelect');
+  const selectedFileName = document.getElementById('selectedFileName');
+  const fileUploadContainer = document.getElementById('fileUploadContainer');
+  const textBox = document.getElementById('textBox');
+
+  // 修改文件選擇功能
+  fileSelect.addEventListener('click', function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.onchange = handleFileSelect;
+    input.click();
+  });
+
+  // 新增的拖放功能
+  textBox.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.style.background = '#4a4a4a';
+  });
+
+  textBox.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.style.background = '';
+  });
+
+  textBox.addEventListener('drop', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.style.background = '';
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelect({ target: { files: e.dataTransfer.files } });
+    }
+  });
+
+  // 修改處理文件選擇的函數
+  function handleFileSelect(event) {
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      // 直接上傳文件
+      uploadFile(selectedFile);
+    }
+  }
+
+  // 新增文件上傳函數
+  function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetch('/fileUpload', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('文件上傳成功:', data);
+    })
+    .catch(error => {
+      console.error('文件上傳錯誤:', error);
+    });
+  }
+});
