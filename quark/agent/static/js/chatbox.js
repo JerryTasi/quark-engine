@@ -116,9 +116,15 @@ function showCodeBlock() {
 
 document.addEventListener('DOMContentLoaded', function() {
   const fileSelect = document.getElementById('fileSelect');
-  const selectedFileName = document.getElementById('selectedFileName');
-  const fileUploadContainer = document.getElementById('fileUploadContainer');
-  const textBox = document.getElementById('textBox');
+  const diagramContainer = document.getElementById('diagram-container');
+  const uploadIndicator = document.getElementById('upload-indicator');
+  const uploadProgress = document.getElementById('upload-progress');
+  const uploadText = uploadIndicator.querySelector('span');
+
+  // if (!fileSelect || !diagramContainer || !uploadIndicator) {
+  //   console.error('無法找到必要的 DOM 元素');
+  //   return;
+  // }
 
   // 修改文件選擇功能
   fileSelect.addEventListener('click', function() {
@@ -128,23 +134,33 @@ document.addEventListener('DOMContentLoaded', function() {
     input.click();
   });
 
-  // 新增的拖放功能
-  textBox.addEventListener('dragover', function(e) {
+  // 新增的拖放功能，現在應用於 diagram-container
+  diagramContainer.addEventListener('dragenter', function(e) {
     e.preventDefault();
     e.stopPropagation();
-    this.style.background = '#4a4a4a';
+    uploadIndicator.style.display = 'flex';
   });
 
-  textBox.addEventListener('dragleave', function(e) {
+  diagramContainer.addEventListener('dragover', function(e) {
     e.preventDefault();
     e.stopPropagation();
-    this.style.background = '';
+    this.style.background = 'rgba(74, 74, 74, 0.5)';
+    uploadIndicator.style.display = 'flex';
   });
 
-  textBox.addEventListener('drop', function(e) {
+  diagramContainer.addEventListener('dragleave', function(e) {
     e.preventDefault();
     e.stopPropagation();
-    this.style.background = '';
+    this.style.background = 'rgba(128, 128, 128, 0.4)';
+    uploadIndicator.style.display = 'none';
+  });
+
+  diagramContainer.addEventListener('drop', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.style.background = 'rgba(128, 128, 128, 0.4)';
+    uploadIndicator.style.display = 'flex';
+    uploadText.textContent = '正在上傳...';
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileSelect({ target: { files: e.dataTransfer.files } });
@@ -160,21 +176,76 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 新增文件上傳函數
+  // 修改文件上傳函數
+  let nextNodeId = 200;  // 初始化 nodeId
+
   function uploadFile(file) {
     const formData = new FormData();
     formData.append('file', file);
+    // fetch('/fileUpload', {
+    //   method: 'POST',
+    //   body: formData
+    // })
+    // .then(response => response.json())
+    // .then(data => {
+    //   console.log('文件上傳成功:', data);
+      
+    //   // 新增節點
+    //   const nodeId = nextNodeId++;
+    //   const title = file.name;
+    //   newFileNode = addNewFileNode(nodeId, title, 2, 3);
+    // })
+    // .catch(error => {
+    //   console.error('文件上傳錯誤:', error);
+    // });
 
-    fetch('/fileUpload', {
-      method: 'POST',
-      body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-      console.log('文件上傳成功:', data);
-    })
-    .catch(error => {
-      console.error('文件上傳錯誤:', error);
-    });
+    // 顯示上傳指示器和進度條
+    uploadIndicator.style.display = 'flex';
+    uploadProgress.style.display = 'block';
+    uploadText.textContent = 'Uploading...';
+    let progress = 0;
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/fileUpload', true);
+
+    xhr.upload.onprogress = function(e) {
+      if (e.lengthComputable) {
+        progress = (e.loaded / e.total) * 100;
+        updateProgress(progress);
+      }
+    };
+
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        const data = JSON.parse(xhr.responseText);
+        console.log('File uploaded successfully:', data);
+        
+        // 新增節點
+        const nodeId = nextNodeId++;
+        const title = file.name;
+        newFileNode = addNewFileNode(nodeId, title, 2, 3);
+
+        // 隱藏上傳指示器和進度條
+        uploadIndicator.style.display = 'none';
+        uploadProgress.style.display = 'none';
+        uploadText.textContent = 'Drag and drop your file here to upload';
+      } else {
+        console.error('File upload error:', xhr.statusText);
+      }
+    };
+
+    xhr.onerror = function() {
+      console.error('File upload error');
+      // 隱藏上傳指示器和進度條
+      uploadIndicator.style.display = 'none';
+      uploadProgress.style.display = 'none';
+    };
+
+    xhr.send(formData);
+  }
+
+  function updateProgress(progress) {
+    const degrees = 3.6 * progress;
+    uploadProgress.style.background = `conic-gradient(#0f0 ${degrees}deg, transparent ${degrees}deg)`;
   }
 });
