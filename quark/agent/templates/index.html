@@ -27,12 +27,21 @@
   </div>
 
   <div class="flowchart-container">
+    <button id="fileSelect" class="circle-button">
+      <i class="fas fa-file-upload"></i>
+    </button>
     <button id="new-action-button" class="circle-button" onclick="callButtonContainer()">+</button>
     <button id="codeblock-button" class="circle-button" onclick="showCodeBlock()">
       <i class="fa-solid fa-code"></i>
     </button>
 
     <div id="diagram-container"></div>
+    
+    <div id="upload-indicator">
+      <i class="fas fa-file-upload"></i>
+      <span>Drag and drop your file here to upload</span>
+      <div id="upload-progress"></div>
+    </div>
 
     <div id="codeBox" class="chatbox"></div>
     <div id="buttonContainer" class="hidden">
@@ -46,7 +55,6 @@
     <div class="container input">
       <textarea type="text" id="message" placeholder="Type your message here..."></textarea>
       <button id="send"></button>
-      <button id="fileSelect"></button>
     </div>
   </div>
 
