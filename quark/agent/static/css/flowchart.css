@@ -1,5 +1,5 @@
 .card {
-    height: 50px;
+    height: 300px;
     background-color: white;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     border-radius: 10px;
@@ -27,7 +27,7 @@
 
 
 .card-content {
-    display: none;
+    /* display: none; */
     flex-direction: column;
     /* align-items: center; */
     flex-grow: 1;
@@ -40,6 +40,7 @@
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 12px;
+    display: flex;
 }
 
 .card-content button {
@@ -60,12 +61,12 @@
     background-color: #00c1b0;
 }
 
-.card.expanded {
+/* .card.expanded {
     height: 300px;
     border-radius: 10px;
-}
+} */
 
-.card.expanded .card-content {
+.card .card-content {
     display: flex;
 }
 
@@ -86,4 +87,18 @@
     margin-top: 10px;
     margin-bottom: 5px;
     text-align: left;
+}
+
+.suggestion-btn {
+    border: 1px dashed white;
+    margin: 5px 0 5px 0;
+    height: 50px;
+    color: white;
+    background: transparent;
+}
+
+.suggestion-btn:hover {
+    border: 2px solid #abfffa;
+    color: #ffffff;
+    background: #004e5e;
 }

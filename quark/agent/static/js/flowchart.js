@@ -2,25 +2,19 @@
 let jsonData = {
     nodes: {
         node1: { label: "Define the behavior 'Construct Cryptographic Key' in the rule instance." },
-        node2: { label: "Run Quark Analysis using the rule instance on the APK sample." },
-        node3: { label: "Obtain all instancesss" },
-        node4: { label: "Check if the parameter values are hard-coded." },
-        node5: { label: "Write the code in the specified file." }
     },
     links: [
-        { source: "node1", target: "node2" },
-        { source: "node2", target: "node3" },
-        { source: "node3", target: "node4" },
-        { source: "node4", target: "node5" }
     ]
 };
 
+let isDragging = false;  // 用於追蹤是否正在拖動
+let isMouseOver = false;
 var flowData = {};
 // 測試修改 `links`
 
 // 定義監聽回調函式
 function onLinksChange() {
-    console.log("Links have changed!");
+    
 
     // 發送 REST request 至 Flask 伺服器
     fetch('/test', {
@@ -55,7 +49,7 @@ const width = document.getElementById('diagram-container').width;
 const paper = new joint.dia.Paper({
     el: document.getElementById('diagram-container'),
     model: graph,
-    width: "100%", height: "93%",
+    width: 2000, height: 2000,
     drawGrid: true,
     gridSize: 10,
     linkPinning: false,
@@ -99,13 +93,13 @@ let firstNode = null; // 用于存储连结线的起点
 joint.dia.Link.define('standard.Link', {
     router: {
         name: 'manhattan',
-        args: { 
+        args: {
             step: 50,
         }
     },
-    connector: { 
-        name: 'rounded', 
-        args: { 
+    connector: {
+        name: 'rounded',
+        args: {
             radius: 50,
         },
     },
@@ -153,14 +147,148 @@ var toolsView = new joint.dia.ToolsView({
 });
 
 
-// paper.on('element:pointerclick', function (elementView, evt) {
-//     console.log(elementView, evt)
-//     // elementView.model.attr('label/text', 'test')
-//     elementView.model.size({height: 200})
-// });
-
 paper.on('element:mouseenter', function (elementView, evt) {
+    isMouseOver = true;
+    setTimeout(() => {
 
+        if (isDragging || !isMouseOver) {
+            return;
+        }
+    
+        elementView.model.toFront();
+
+        var outboundLinks = graph.getConnectedLinks(elementView.model, { outbound: true })
+        if (outboundLinks.length == 0) {
+
+            // 先移除之前可能生成的額外元素
+            const suggestionBox = document.getElementById('suggestion-box');
+            if (suggestionBox) {
+                suggestionBox.remove();
+            }
+
+            stepChain = []
+            Object.values(nodes).forEach(node => {
+                stepChain.push(node.get('fullText'))
+            });
+
+            // elementView.model.attr('label/text', stepChain.join('\n'))
+
+            elementX = elementView.model.get('position').x
+            elementY = elementView.model.get('position').y
+            elementWidth = elementView.model.get('size').width
+            elementHeight = elementView.model.get('size').height
+            reactCenterX = elementView.model.get('size').width / 2
+            reactCenterY = elementView.model.get('size').height / 2
+
+            const clientPoint = paper.localToClientPoint(elementX, elementY)
+
+            fetch('/getSuggestion', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    stepChain: stepChain
+                })
+            })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (responseMessage) {
+                    // 建立矩形框
+                    const suggestionBox = document.createElement('div');
+
+                    suggestionBox.id = 'suggestion-box';
+                    suggestionBox.style.position = 'absolute';
+                    // suggestionBox.style.border = '2px dashed white'; // 虛線方框
+                    suggestionBox.style.padding = '10px';
+                    suggestionBox.style.left = `${clientPoint.x + 350}px`; // 距離右方100px
+                    suggestionBox.style.display = 'flex';
+                    suggestionBox.style.flexDirection = 'column'; // 按鈕垂直排列
+
+                    // 根據 stepChain 內容動態生成按鈕
+                    responseMessage.suggestion.forEach(action => {
+                        const suggestionBtn = document.createElement('button');
+                        suggestionBtn.classList.add('suggestion-btn')
+                        suggestionBtn.textContent = action.label;
+
+                        suggestionBox.appendChild(suggestionBtn);
+
+                        const suggestionConnection = new joint.shapes.standard.Link({
+                            router: { name: 'manhattan', args: { step: 10, } },
+                            connector: { name: 'rounded', args: { radius: 50, }, },
+                        });
+
+                        suggestionBtn.addEventListener('mouseover', function () {
+                            suggestionConnection.source(elementView.model, { "port": "right" });
+                            const suggestionBtnRect = suggestionBtn.getBoundingClientRect();
+                            const targetPoint = paper.clientToLocalPoint(suggestionBtnRect.left, suggestionBtnRect.top)
+                            suggestionConnection.target({ x: targetPoint.x, y: targetPoint.y + suggestionBtnRect.height / 2 });
+                            suggestionConnection.addTo(graph);
+                        });
+
+                        suggestionBtn.addEventListener('mouseleave', function () {
+                            suggestionConnection.remove()
+                        });
+
+                        suggestionBtn.addEventListener('click', function () {
+                            // 當按鈕被點擊時，將其內容添加到 elementView 的 label
+                            newNode = callAddNewNode(
+                                action.id, 
+                                suggestionBtn.textContent, 
+                                suggestionBtn.textContent,
+                                elementX+200,
+                                elementY+150
+                            )
+                            addLink(elementView.model, newNode)
+                            touchBox.remove();
+                            suggestionBox.remove();
+                            suggestionConnection.remove()
+                        });
+
+                    });
+
+                    // 將矩形框加入到文件中
+                    document.body.appendChild(suggestionBox);
+
+                    const suggestionDiv = document.getElementById('suggestion-box')
+
+                    document.getElementById('suggestion-box').style.top = `${clientPoint.y + reactCenterY - (suggestionDiv.clientHeight / 2)}px`
+
+                    const touchBox = document.createElement('div');
+                    touchBox.id = 'touch-box'
+                    touchBox.style.position = 'absolute';
+                    touchBox.style.top = `${clientPoint.y}px`
+                    touchBox.style.left = `${clientPoint.x}px`
+                    touchBox.style.width = `${elementWidth + 100}px`
+                    touchBox.style.height = `${elementHeight}px`
+
+                    document.body.appendChild(touchBox)
+
+                    touchBox.addEventListener('mouseleave', function () {
+                        if (!touchBox.contains(event.relatedTarget) && !suggestionBox.contains(event.relatedTarget)) {
+                            // 如果滑鼠同時不在 touchBox 和 suggestionBox 中，移除它們
+                            touchBox.remove();
+                            suggestionBox.remove();
+                        }
+                    });
+
+                    // 添加鼠标移出事件监听器
+                    suggestionBox.addEventListener('mouseleave', function () {
+                        // 当鼠标移出时，移除 extraElement
+                        if (!touchBox.contains(event.relatedTarget) && !suggestionBox.contains(event.relatedTarget)) {
+                            // 如果滑鼠同時不在 touchBox 和 suggestionBox 中，移除它們
+                            touchBox.remove();
+                            suggestionBox.remove();
+                        }
+                    });
+
+                })
+                .catch(error => console.error("Error:", error));
+
+        }
+
+    }, 1000);
     const fullText = elementView.model.get("fullText")
     // const fullText = 'This is an example of a very long description that exceeds 20 characters';
     // Create a tooltip and append it to the document
@@ -183,6 +311,7 @@ paper.on('element:mouseenter', function (elementView, evt) {
     });
 });
 
+
 paper.on('link:mouseenter', function (linkView) {
     linkView.addTools(toolsView);
 });
@@ -197,6 +326,8 @@ paper.on('element:mouseenter', function (element) {
 
 paper.on('element:mouseleave', function (element) {
     setPortsVisibility(element, 'hidden');
+    isDragging = false;
+    isMouseOver = false;
 });
 
 paper.on('link:snap:connect', function (linkView, evt, elementViewConnected, magnet, arrowhead) {
@@ -219,7 +350,6 @@ paper.on('link:snap:connect', function (linkView, evt, elementViewConnected, mag
             return response.json();
         })
         .then(function (botMessage) {
-            console.log(botMessage)
             var textDiv = document.createElement("div");
 
             textDiv.className = "message bot";
@@ -248,9 +378,11 @@ function setPortsVisibility(element, visibility) {
     element.model.prop('ports/groups/right/attrs/portBody/visibility', visibility)
 }
 
-graph.on('change', function (cell, opt) {
-    if (cell.isLink()) return;
-    autosize(cell);
+graph.on('change:position', function (cell, opt) {
+    // if (cell.isLink()) return;
+    // autosize(cell);
+    isDragging = true;
+
 });
 
 function autosize(element) {
@@ -271,7 +403,7 @@ async function processNodesAndLinks(flowData) {
     // paper.model.clear();
     var paperWidth = paper.getComputedSize().width;
     var nodeCount = Object.keys(flowData.nodes).length;
-    var spacing = 50 + paperHeight / 10;
+    var spacing = 10 + paperHeight / 15;
     var i = 1;
     var x = 0;
 
@@ -280,8 +412,8 @@ async function processNodesAndLinks(flowData) {
 
     for (const nodeId in sortedNodesObj) {
         const node = flowData.nodes[nodeId];
-        posY = (spacing * i) - 20;
-        posX = (spacing+230 * i) - 300;
+        posY = (spacing * i);
+        posX = (spacing + 230 * i) - 300;
         i = i + 1;
 
         // remove flowdata node
@@ -324,9 +456,9 @@ function callButtonContainer() {
     }
 }
 
-function callAddNewNode(nodeId, title, description) {
+function callAddNewNode(nodeId, title, description, posX=0, posY=0) {
 
-    newNode = addNewNode(nodeId, title, 2, 3);
+    newNode = addNewNode(nodeId, title, posX, posY);
     fetch('/add_analyze_step', {
         method: 'POST',
         headers: {
@@ -341,7 +473,6 @@ function callAddNewNode(nodeId, title, description) {
             return response.json();
         })
         .then(function (botMessage) {
-            console.log(botMessage)
             var textDiv = document.createElement("div");
 
             textDiv.className = "message bot";
@@ -362,6 +493,8 @@ function callAddNewNode(nodeId, title, description) {
             textBox.scrollTop = textBox.scrollHeight;
         })
         .catch(error => console.error("Error:", error));
+    
+    return newNode
 }
 
 function loadJson() {
@@ -384,110 +517,47 @@ function loadJson() {
         .catch(error => console.error('錯誤:', error));
 }
 
-const Form = joint.dia.Element.define('example.form', {
-    attrs: {
-        foreignObject: {
-            width: 'calc(w)',
-            height: 'calc(h)'
-        },
-        card: {
-            class: 'card'
-        }
-    }
-}, {
-    markup: joint.util.svg/* xml */`
-    <foreignObject @selector="foreignObject">
-        <div xmlns="http://www.w3.org/1999/xhtml" class="outer" >
-
-            <div @selector="card" class="card">
-                <text class="card-title">fff</text>
-                <button class="expand-button" onclick="expandCard(this)">+</button>
-                <div class="card-content">
-                    <label class="card-label">Edit Quark detection rules (Edit behavior)</label>
-                    <label class="card-label">First API of behavior</label>
-                    <input type="text" name="name" autocomplete="off" placeholder="Input API full name"/>
-                    <label class="card-label">Second API of behavior</label>
-                    <input type="text" name="name" autocomplete="off" placeholder="Input API full name"/>
-                    <button>Save</button>
-                </div>
-            </div>
-
-        </div>
-    </foreignObject>
-        `
-});
-
-const FormView = joint.dia.ElementView.extend({
-
-});
-
-
-paper.on('element:mouseenter', (elementView, evt) => {
-    elementView.model.toFront();
-});
-
 var highestZIndex = 1;
-function expandCard(button) {
-    const card = button.parentElement;
-    if (card.classList.contains('expanded')) {
-        card.classList.remove('expanded');
-    } else {
-        card.classList.add('expanded');
-        highestZIndex++;
-        card.style.zIndex = highestZIndex+1;
 
+function expandCard(node) {
+    
+    if (node.get('size').height >= 120) {
+        node.resize(300, 52)
+    } else {
+        if (node.get('fullText').includes('behavior')) {
+            node.resize(300, 300)
+        }else {
+            node.resize(300, 120)
+        }
     }
 }
 
-let isDragging = false;  // 用於追蹤是否正在拖動
-let isCardTitle = false; // 用於追蹤是否按住了 .card-title
+function behaviorEditSubmit(card) {
+    const firstAPI = card.querySelector('input[name="firstAPI"]').value
+    const secondAPI = card.querySelector('input[name="secondAPI"]').value
+    console.log(firstAPI, secondAPI)
+    fetch('/add_behavior', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            firstAPI: firstAPI,
+            secondAPI: secondAPI
+        })
+    }).then(response => response.json())
+    .then(data => {
+        console.log(data)
+    })
+    .catch(error => console.error('error:', error));
+}
 
-// JointJS 的 interactive 配置，用於控制元素的互動性
-paper.options.interactive = function (cellView) {
-    // 如果按住了 .card-title 才允許移動
-    return { elementMove: isCardTitle };
-};
 
 // 監聽 element 上的 mousedown 事件，當使用者按住時觸發
 paper.on('element:pointerdown', function (elementView, evt) {
     const clickedElement = evt.target;
 
-    // 檢查是否按住了 .card-title
-    if (clickedElement.classList.contains('card-title')) {
-        isDragging = true;
-        isCardTitle = true;  // 表示按住了 .card-title
-
-        console.log("Card title pressed! Node is movable.");
-    } else {
-        // 如果按住的不是 .card-title，則禁止移動
-        isDragging = false;
-        isCardTitle = false;
-
-        console.log("Node pressed outside card-title. Node is not movable.");
+    if (clickedElement.classList.contains('expand-button')) {
+        expandCard(elementView.model)
     }
 });
-
-// 監聽 element 上的 mouseup 事件，當使用者放開時觸發
-paper.on('element:pointerup', function (elementView, evt) {
-    if (isDragging) {
-        console.log("Card title released! Stopping drag.");
-
-        // 停止拖動並重置狀態
-        isDragging = false;
-        isCardTitle = false; // 重置為不在 .card-title 範圍內
-    }
-});
-
-// paper.on('element:pointerclick', function (elementView, evt) {
-//     console.log("fick")
-//     const cardClass = elementView.model.attr('card/class');
-//     // console.log(cardClass)
-//     // elementView.model.attr('card/class', 'card expanded');
-
-//     if (cardClass === 'card expanded') {
-//         elementView.model.attr('card/class', 'card');
-//     } else {
-//         elementView.model.attr('card/class', 'card expanded');
-//     }
-// })
-

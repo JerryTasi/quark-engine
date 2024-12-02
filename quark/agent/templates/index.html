@@ -25,20 +25,30 @@
     <img class="logo" src="{{url_for('static', filename='images/quark-logo.png')}}" />
     <h1 class="subtitle">Quark Agent: Your AI-powered Android APK Analyst</h1>
   </div>
-
+  
+  <button id="new-action-button" class="circle-button" onclick="callButtonContainer()">+</button>
+  <button id="codeblock-button" class="circle-button" onclick="showCodeBlock()">
+    <i class="fa-solid fa-code"></i>
+  </button>
   <div class="flowchart-container">
-    <button id="new-action-button" class="circle-button" onclick="callButtonContainer()">+</button>
-    <button id="codeblock-button" class="circle-button" onclick="showCodeBlock()">
-      <i class="fa-solid fa-code"></i>
+    <button id="fileSelect" class="circle-button">
+      <i class="fas fa-file-upload"></i>
     </button>
-
-    <div id="diagram-container"></div>
+    <div id="diagram-container" style="width: 100%; height: 92%; overflow: scroll;"></div>
+    
+    <div id="upload-indicator">
+      <i class="fas fa-file-upload"></i>
+      <span>Drag and drop your file here to upload</span>
+      <div id="upload-progress"></div>
+    </div>
 
     <div id="codeBox" class="chatbox"></div>
+
     <div id="buttonContainer" class="hidden">
       <div class="centerText">New Action</div>
       <div class="button-grid" id="grids"></div>
     </div>
+
   </div>
 
   <div class="chatbox-container">
@@ -48,39 +58,7 @@
       <button id="send"></button>
     </div>
   </div>
-
 </body>
-
-<!-- 
-<body>
-  <img class="logo" src="{{url_for('static', filename='images/quark-logo.png')}}" />
-  <h1 class="subtitle">Quark Agent: Your AI-powered Android APK Analyst</h1>
-
-  <div class="container" id="largeContainer">
-    <div class="container">
-      <div class="row">
-        <div class="chatbox" id="codeBox"></div>
-      </div>
-    </div>
-
-    <div class="container">
-      <div class="row">
-        <div class="chatbox" id="textBox"></div>
-        <button id="toggleButton" class="circle-button" onclick="callButtonContainer()">+</button>
-        <div id="diagram-container" class="container">
-        </div>
-      </div>
-
-      
-    </div>
-  </div>
-
-  <div class="container input-container">
-    <textarea type="text" id="message" placeholder="Type your message here..."></textarea>
-    <button id="send"></button>
-  </div>
-
-</body> -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.13.4/underscore-min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
@@ -100,7 +78,7 @@
   console.log("Debug mode is ON.");
   // set codebox to be visible
   // document.getElementById('codeBox').style.display = 'block';
-  processNodesAndLinks(jsonData);
+  // processNodesAndLinks(jsonData);
 </script>
 {% endif %}
 

@@ -16,12 +16,14 @@ required_requirements = [
     "rzpipe",
     "click",
     "r2pipe==1.8.0",
+    "ciphey"
 ]
 
 quarkAgentRequirements = [
-    "langchain==0.2.11",
-    "langchain-core==0.2.23",
-    "langchain-openai==0.1.17",
+    "langchain==0.3.1",
+    "langchain-core==0.3.6",
+    "langchain-openai==0.2.1",
+    "langgraph==0.2.28",
     "flask==2.2.5",
 ]
 
@@ -35,12 +37,14 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/quark-engine/quark-engine",
     packages=setuptools.find_packages(exclude=("tests",)),
+    include_package_data=True, 
     package_data={
         "quark.core.axmlreader": ["axml_definition"],
         "quark.webreport": [
             "analysis_report_layout.html",
             "genrule_report_layout.html",
         ],
+        "quark.agent": ['static/*', 'templates/*'],
         "quark.script.frida": ["agent.js"],
     },
     entry_points={
@@ -48,6 +52,7 @@ setuptools.setup(
             "quark=quark.cli:entry_point",
             "freshquark=quark.freshquark:entry_point",
             "quark-agent=quark.agent.quarkAgent:entryPoint",
+            "quark-agent-web=quark.agent.quarkAgentWeb:entryPoint",
         ]
     },
     classifiers=[

@@ -2,6 +2,9 @@
 # This file is part of Quark-Engine - https://github.com/quark-engine/quark-engine
 # See the file 'LICENSE' for copying permission.
 
+import json
+import uuid
+
 from quark.script import Rule, _getQuark, QuarkResult
 from quark.core.struct.ruleobject import RuleObject
 from quark.utils.weight import Weight
@@ -15,7 +18,6 @@ except ModuleNotFoundError as e:
     # Create a fake tool in case langchain is not installed.
     def tool(func):
         return func
-
 
 rule_checker = None
 quark = None
@@ -292,6 +294,42 @@ def writeCodeInFile(code: str, pyFile: str):
 
     return pyFile
 
+@tool
+def addAnalyzeStep(label):
+    """
+    Add a new step in analyze process.
+    """
+    print("addddddd")
+    try:
+        # Load the existing JSON file
+        with open("flowdata/flowdata.json", 'r', encoding='utf-8') as file:
+            data = json.load(file)
+
+    except FileNotFoundError:
+        # If the file doesn't exist, create the initial structure
+        data = {
+            "nodes": {
+                "node1": {
+                    "label": "執行 loadRule"
+                }
+            },
+            "links": [
+                {"source": "node1", "target": "node2"}
+            ]
+        }
+
+    # Generate a random unique node id
+    new_node_id = str(uuid.uuid4())
+
+    # Add the new node with the provided label
+    data["nodes"][new_node_id] = {
+        "label": label
+    }
+
+    # Save the updated JSON back to the file
+    with open("flowdata/flowdata.json", 'w', encoding='utf-8') as file:
+        json.dump(data, file, indent=4, ensure_ascii=False)
+    
 
 agentTools = [
     initRuleObject,
@@ -310,4 +348,5 @@ agentTools = [
     getParameterValues,
     isHardCoded,
     writeCodeInFile,
+    addAnalyzeStep,
 ]

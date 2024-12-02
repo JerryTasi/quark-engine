@@ -14,7 +14,7 @@ function addLink(sourceNode, targetNode) {
     }
 
     const connection = new joint.shapes.standard.Link({
-        router: { name: 'manhattan', args: { step: 50,} },
+        router: { name: 'manhattan', args: { step: 10,} },
         connector: { name: 'rounded', args: { radius: 50, }, },
     });
     

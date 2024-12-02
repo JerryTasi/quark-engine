@@ -113,3 +113,123 @@ function showCodeBlock() {
     codeblockButton.style.color = "#000";
   }
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+  const fileSelect = document.getElementById('fileSelect');
+  const diagramContainer = document.getElementById('diagram-container');
+  const uploadIndicator = document.getElementById('upload-indicator');
+  const uploadProgress = document.getElementById('upload-progress');
+  const uploadText = uploadIndicator.querySelector('span');
+
+  // if (!fileSelect || !diagramContainer || !uploadIndicator) {
+  //   console.error('無法找到必要的 DOM 元素');
+  //   return;
+  // }
+
+  // 修改文件選擇功能
+  fileSelect.addEventListener('click', function () {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.onchange = handleFileSelect;
+    input.click();
+  });
+
+  // 新增的拖放功能，現在應用於 diagram-container
+  diagramContainer.addEventListener('dragenter', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadIndicator.style.display = 'flex';
+  });
+
+  diagramContainer.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.style.background = 'rgba(74, 74, 74, 0.5)';
+    uploadIndicator.style.display = 'flex';
+  });
+
+  diagramContainer.addEventListener('dragleave', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.style.background = 'rgba(128, 128, 128, 0.4)';
+    uploadIndicator.style.display = 'none';
+  });
+
+  diagramContainer.addEventListener('drop', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.style.background = 'rgba(128, 128, 128, 0.4)';
+    uploadIndicator.style.display = 'flex';
+    uploadText.textContent = '正在上傳...';
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelect({ target: { files: e.dataTransfer.files } });
+    }
+  });
+
+  // 修改處理文件選擇的函數
+  function handleFileSelect(event) {
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      // 直接上傳文件
+      uploadFile(selectedFile);
+    }
+  }
+
+  // 修改文件上傳函數
+  let nextNodeId = 200;  // 初始化 nodeId
+
+  function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // 顯示上傳指示器和進度條
+    uploadIndicator.style.display = 'flex';
+    uploadProgress.style.display = 'block';
+    uploadText.textContent = 'Uploading...';
+    let progress = 0;
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/fileUpload', true);
+
+    xhr.upload.onprogress = function (e) {
+      if (e.lengthComputable) {
+        progress = (e.loaded / e.total) * 100;
+        updateProgress(progress);
+      }
+    };
+
+    xhr.onload = function () {
+      if (xhr.status === 200) {
+        const data = JSON.parse(xhr.responseText);
+        console.log('File uploaded successfully:', data);
+
+        // 新增節點
+        const nodeId = nextNodeId++;
+        const title = file.name;
+        newFileNode = addNewFileNode(nodeId, title, 2, 3);
+
+        // 隱藏上傳指示器和進度條
+        uploadIndicator.style.display = 'none';
+        uploadProgress.style.display = 'none';
+        uploadText.textContent = 'Drag and drop your file here to upload';
+      } else {
+        console.error('File upload error:', xhr.statusText);
+      }
+    };
+
+    xhr.onerror = function () {
+      console.error('File upload error');
+      // 隱藏上傳指示器和進度條
+      uploadIndicator.style.display = 'none';
+      uploadProgress.style.display = 'none';
+    };
+
+    xhr.send(formData);
+  }
+
+  function updateProgress(progress) {
+    const degrees = 3.6 * progress;
+    uploadProgress.style.background = `conic-gradient(#0f0 ${degrees}deg, transparent ${degrees}deg)`;
+  }
+});

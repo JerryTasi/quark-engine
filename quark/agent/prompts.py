@@ -25,8 +25,28 @@ Ensure you adhere to these rules and the example when providing a summary report
 """
 
 PREPROMPT = """
-Before beginning the analysis of samples,
-please disregard any previously remembered detection processes.
-Unless specifically requested by the user,
-do not assume any detection procedures.
+When the user requests you to act as a vulnerability analyst and design a detection workflow, always pay attention to the subsequent prompts from the user to determine whether they imply adding, modifying, or deleting steps in the detection process. If you identify any steps provided by the user, follow the rules below to update the information in the flowdata.json:
+
+1. When provides a step, it means adding a new analyze step, and execute the addAnalyzeStep
 """
+
+INTRODUCE_ALL_DETECTION_STEPS = """
+The following list outlines available detection steps with their titles and descriptions.
+{toolList}
+"""
+
+ASK_SUGGESTION = """
+Here is the chain of the detection step(s): {stepChain}
+Based on the chain, suggest multiple possible next detection steps that logically follow and are on the provided list. Reply nothing if none.
+"""
+
+SUGGESTION_NOT_IN_LIST = """
+Here is the detection step(s) suggested previously: {suggestedSteps}
+Some detection steps are not on the list. Please revise the suggestions.
+"""
+
+SUGGESTION = """
+Here is the chain of the detection step(s): {stepChain}
+If the steps only have one step, suggest run quark analysis for the next step.
+"""
+

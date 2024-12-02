@@ -1,3 +1,4 @@
+import webbrowser
 import os
 import re
 import json
@@ -17,7 +18,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 # from quark.agent.prompts import PREPROMPT
 from quark.config import OPENAI_API_KEY
 from quark.script.ciphey import checkClearText
-
+from quark.agent.stepSuggestion import DetectionStepSuggestion
 import uuid
 
 # Import the optional dependency, langchain
@@ -60,13 +61,11 @@ if text == checkClearText(text):
 
 """
 
-with open("flowdata/flowdata.json", "w", encoding="utf-8") as file:
-    json.dump({"nodes": {}, "links": []}, file, indent=4, ensure_ascii=False)
-
 app = Flask(__name__)
 print(OPENAI_API_KEY)
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
-app.config['DEBUG'] = True
+app.config["DEBUG"] = True
+app.config['UPLOAD_FOLDER'] = 'uploads'
 conversation_history = []
 
 
@@ -229,11 +228,12 @@ def writeCodeInFile(code: str, pyFile: str):
 
     return pyFile
 
+
 @tool
 def checkClearText(text: str):
     """
     If the text is clear text the return value of checkClearText is the same as the input text.
-    
+
     Used Quark Script API: checkClearText(inputString)
     - description: Check the decrypted value of the input string.
     - params:
@@ -242,24 +242,26 @@ def checkClearText(text: str):
     - example:
 
         .. code:: python
-        
+
             from quark.script.ciphey import checkClearText
-            
+
             text = "clearText"
             if text == checkClearText(text)
                 print(f"{text} is clear text")
     """
     from quark.script.ciphey import checkClearText
+
     if text == checkClearText(text):
         return True
     else:
         return False
-    
+
+
 @tool
 def getCallerMethod():
     """
     Get the caller method of the behavior.
-    
+
     Used Quark Script API: behaviorInstance.methodCaller
     - description: Find method who calls this behavior (API1 & API2).
     - params: none
@@ -279,13 +281,14 @@ def getCallerMethod():
     print(callerMethod.fullName)
     return callerMethod.fullName
 
+
 @tool
 def addLink(source, target):
     """
     Add link based on the order of analysis process.
-    
+
     The parameter source and target is not step number.
-    The parameter source refers to the description of the source detection process, 
+    The parameter source refers to the description of the source detection process,
     and the parameter target refers to the description of the target detection process.
     """
     try:
@@ -314,7 +317,6 @@ def addLink(source, target):
                 f"Link from '{source}' to '{target}' already exists. No new link added."
             )
             return  # Exit the function if the link is found
-
 
     data["links"].append(
         {"source": sourceid, "target": targetid},
@@ -366,10 +368,10 @@ agentTools = [
     addAnalyzeStep,
     addLink,
     checkClearText,
-    getCallerMethod
+    getCallerMethod,
 ]
 
-llm = ChatOpenAI(model="gpt-4o", temperature=0.5)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.5)
 llm_with_tools = llm.bind_tools(agentTools)
 
 prompt = ChatPromptTemplate.from_messages(
@@ -526,13 +528,15 @@ def add_link():
     targetLabel = flowdata["nodes"][target]["label"]
 
     with open("flowdata/flowdata.json", "w") as file:
-        
+
         # check if the link already exists
         for link in flowdata["links"]:
             if link["source"] == source and link["target"] == target:
-                print(f"Link from '{sourceLabel}' to '{targetLabel}' already exists. No new link added.")
+                print(
+                    f"Link from '{sourceLabel}' to '{targetLabel}' already exists. No new link added."
+                )
                 return
-        
+
         flowdata["links"].append(
             {"source": source, "target": target},
         )
@@ -579,18 +583,19 @@ def add_link():
 
     return result
 
+
 @app.route("/add_analyze_step", methods=["POST"])
 def add_analyze_step():
-   # 從請求中獲取 JSON 數據
+    # 從請求中獲取 JSON 數據
     data = request.json
     node = data.get("node")
 
     with open("flowdata/flowdata.json", "r") as file:
         flowdata = json.load(file)
-    
+
     with open("flowdata/flowdata.json", "w") as file:
         nodeid = data.get("nodeId")
-        
+
         stepNumber = len(flowdata["nodes"]) + 1
         flowdata["nodes"][nodeid] = {"no": stepNumber, "label": node}
         json.dump(flowdata, file, indent=4, ensure_ascii=False)
@@ -635,10 +640,80 @@ def add_analyze_step():
 
     return result
 
+
 @app.route("/getToolList")
 def getToolList():
-    return send_from_directory('toolJson', "toolList.json")
+    return send_from_directory("toolJson", "toolList.json")
 
-# sssssssssssssssss
-if __name__ == "__main__":
+
+@app.route("/getSuggestion", methods=["POST"])
+def getSuggestion():
+    data = request.json
+    print("fucku")
+    stepChain = data.get("stepChain")
+    # suggestions = DetectionStepSuggestion().provideSuggestions(stepChain=stepChain)
+    suggestions = []
+    print(stepChain)
+    if "Define the behavior" in stepChain[-1]:
+        suggestions = ["Run Quark analysis with a rule."]
+
+    if "Run Quark Analysis" in stepChain[-1]:
+        suggestions = [
+            "Obtain all instances of detected behaviors from the Quark Analysis results."
+        ]
+
+    if "Obtain all instances" in stepChain[-1]:
+        suggestions = [
+            "Retrieve the parameter values for each occurred behavior.",
+            "Get caller method of the behavior.",
+        ]
+
+    if "Retrieve the parameter values" in stepChain[-1]:
+        suggestions = [
+            "Check if any parameters are hard-coded",
+            "Check if the parameter is clear text.",
+            "Get caller method of the behavior.",
+        ]
+
+    newSuggestions = []
+    for s in suggestions:
+        newSuggestions.append({"id": str(uuid.uuid4()), "label": s})
+    return {"suggestion": newSuggestions}
+
+
+@app.route("/add_behavior", methods=["POST"])
+def add_behavior():
+    data = request.json
+    firstAPI = data.get("firstAPI")
+    secondAPI = data.get("secondAPI")
+    print(firstAPI, secondAPI)
+    return {"suggestion": ["test", "test2", "test3"]}
+
+
+@app.route('/fileUpload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return {"status": "fail", "message": "No file part"}, 400
+    file = request.files['file']
+    if file.filename == '':
+        return {"status": "fail", "message": "No selected file"}, 400
+    if file:
+        filename = file.filename
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return {"status": "success", "message": "File uploaded successfully"}, 200
+    return {"status": "fail", "message": "File upload failed"}, 500
+
+@app.route("/test", methods=["POST"])
+def test():
+
+    return {"suggestion": ["test", "test2", "test3"]}
+
+
+def entryPoint():
     app.run(debug=True)
+
+
+if __name__ == "__main__":
+
+    entryPoint()
+    

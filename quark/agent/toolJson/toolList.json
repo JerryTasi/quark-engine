@@ -18,11 +18,11 @@
     },
     {
       "title": "get Behavior Occur List",
-      "description": "Extracts the behavior occurrence list from quark analysis result."
+      "description": "Obtain all instances of detected behaviors from the Quark Analysis results."
     },
     {
       "title": "get Parameter Values",
-      "description": "Extract the parameter values from the behavior occurrence list."
+      "description": "Retrieve the parameter values for each occurred behavior."
     },
     {
       "title": "is Hard Coded",
