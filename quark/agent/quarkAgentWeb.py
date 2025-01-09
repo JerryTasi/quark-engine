@@ -18,7 +18,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 # from quark.agent.prompts import PREPROMPT
 from quark.config import OPENAI_API_KEY
 from quark.script.ciphey import checkClearText
-from quark.agent.stepSuggestion import DetectionStepSuggestion
+# from quark.agent.stepSuggestion import DetectionStepSuggestion
 import uuid
 
 # Import the optional dependency, langchain
@@ -67,7 +67,7 @@ os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 app.config["DEBUG"] = True
 app.config['UPLOAD_FOLDER'] = 'uploads'
 conversation_history = []
-
+uploadFilePathPrefix = "uploads/"
 
 @tool
 def loadRule(rulePath: str):
@@ -89,8 +89,9 @@ def loadRule(rulePath: str):
 
     """
 
+    from quark.script import Rule
     global ruleInstance
-    ruleInstance = Rule(rulePath)
+    ruleInstance = Rule(uploadFilePathPrefix + rulePath)
 
     return "Rule defined successfully"
 
@@ -117,10 +118,11 @@ def runQuarkAnalysis(samplePath: str):
             quarkResult = runQuarkAnalysis("sample.apk", ruleInstance)
 
     """
-
+    
+    from quark.script import _getQuark, QuarkResult
     global quarkResultInstance
 
-    quark = _getQuark(samplePath)
+    quark = _getQuark(uploadFilePathPrefix + samplePath)
     quarkResultInstance = QuarkResult(quark, ruleInstance)
 
     return "Quark analysis completed successfully"
